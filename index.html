@@ -123,23 +123,20 @@ $('startBtn').onclick=async()=>{
   try {
     await scanner.start(
       {facingMode:"environment"},
-      {fps:10,qrbox:{width:280,height:180},formatsToSupport:[
-        Html5QrcodeSupportedFormats.CODE_128,
-        Html5QrcodeSupportedFormats.CODE_39,
-        Html5QrcodeSupportedFormats.CODE_93,
-        Html5QrcodeSupportedFormats.CODABAR,
-        Html5QrcodeSupportedFormats.ITF,
-        Html5QrcodeSupportedFormats.EAN_13,
-        Html5QrcodeSupportedFormats.EAN_8,
-        Html5QrcodeSupportedFormats.UPC_A,
-        Html5QrcodeSupportedFormats.UPC_E
-      ]},
+      {
+        fps:15,
+        rememberLastUsedCamera:true,
+        qrbox:(viewfinderWidth,viewfinderHeight)=>({
+          width:Math.floor(viewfinderWidth*0.92),
+          height:Math.min(160,Math.floor(viewfinderHeight*0.42))
+        })
+      },
       text=>{ handleScannedBarcode(text); },
       ()=>{}
     );
     running=true; $('startBtn').disabled=true; $('stopBtn').disabled=false;
   } catch(e) {
-    alert('Could not start the camera scanner. Check camera permission and try again.');
+    alert('Could not start the camera scanner. Make sure camera permission is allowed and open this page from HTTPS or localhost.\n\n' + (e && e.message ? e.message : '')); 
     scanner=null;
   }
 };
