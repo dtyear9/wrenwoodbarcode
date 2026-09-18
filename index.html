@@ -60,6 +60,15 @@ th{position:sticky;top:0;background:white} .table-wrap{max-height:520px;overflow
 <tbody id="tbody"></tbody></table>
 </div>
 </section>
+
+<section class="cart">
+  <div class="cart-head">
+    <h2 style="margin:0">🛒 Cart <span id="cartCount" class="badge">0 items</span></h2>
+    <button id="clearCart" class="secondary">Clear cart</button>
+  </div>
+  <div id="cartItems" class="cart-items"><div class="cart-empty">Scan a product to add it to the cart.</div></div>
+  <div id="cartTotal" class="cart-total">0 unique products</div>
+</section>
 </div>
 
 <script>
@@ -85,7 +94,9 @@ function showProduct(p, message='') {
 function lookup(raw) {
   const code=normalise(raw);
   $('manual').value=code;
-  showProduct(PRODUCTS.find(p=>p.barcode===code), code.length===20 ? '' : 'A Wrenwood barcode contains 20 digits.');
+  const found=PRODUCTS.find(p=>p.barcode===code);
+  showProduct(found, code.length===20 ? '' : 'A Wrenwood barcode contains 20 digits.');
+  if(found) addToCart(found);
 }
 $('lookupBtn').onclick=()=>lookup($('manual').value);
 $('clearBtn').onclick=()=>{ $('manual').value=''; $('result').classList.remove('show'); };
