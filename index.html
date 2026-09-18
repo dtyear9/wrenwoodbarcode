@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wrenwood Living — Barcode Scanner</title>
+<script src="https://unpkg.com/html5-qrcode" defer></script>
+<style>
+:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#20251f;background:#f5f3ee}
+*{box-sizing:border-box} body{margin:0} .wrap{max-width:1050px;margin:auto;padding:24px}
+header{background:#253126;color:#fff;border-radius:18px;padding:24px;margin-bottom:18px}
+h1{margin:0 0 6px;font-size:clamp(26px,5vw,42px)} header p{margin:0;opacity:.85}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px} .card{background:white;border-radius:18px;padding:18px;box-shadow:0 4px 18px #0000000d}
+@media(max-width:760px){.grid{grid-template-columns:1fr}}
+#reader{width:100%;min-height:280px;border:2px dashed #b9beb5;border-radius:14px;overflow:hidden}
+button,input,select{font:inherit} input,select{width:100%;padding:12px;border:1px solid #ccd1c9;border-radius:10px;background:#fff}
+.row{display:flex;gap:8px;margin-top:10px} .row button{flex:1}
+button{padding:12px 15px;border:0;border-radius:10px;background:#253126;color:white;cursor:pointer}
+button.secondary{background:#e9ece6;color:#253126} button:disabled{opacity:.5;cursor:not-allowed}
+.result{margin-top:14px;padding:16px;border-radius:12px;background:#eef3eb;display:none}
+.result.show{display:block} .sku{font-weight:700;letter-spacing:.04em} .code{font-family:ui-monospace,monospace;word-break:break-all}
+.filters{display:grid;grid-template-columns:1fr 180px;gap:10px;margin-bottom:12px}
+table{width:100%;border-collapse:collapse;font-size:14px} th,td{padding:10px 8px;border-bottom:1px solid #e7e9e4;text-align:left;vertical-align:top}
+th{position:sticky;top:0;background:white} .table-wrap{max-height:520px;overflow:auto}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#e8eee5;font-size:12px}
+.note{font-size:13px;color:#5f665d;margin-top:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><h1>Wrenwood Living</h1><p>Product barcode scanner & lookup</p></header>
+
+<div class="grid">
+<section class="card">
+<h2>Scan a barcode</h2>
+<div id="reader"></div>
+<div class="row">
+<button id="startBtn">Start camera</button>
+<button id="stopBtn" class="secondary" disabled>Stop</button>
+</div>
+<p class="note">Allow camera access when your browser asks. HTTPS or localhost is normally required for camera scanning.</p>
+</section>
+
+<section class="card">
+<h2>Enter barcode</h2>
+<input id="manual" inputmode="numeric" maxlength="20" placeholder="Enter the 20-digit barcode">
+<div class="row"><button id="lookupBtn">Look up product</button><button id="clearBtn" class="secondary">Clear</button></div>
+<div id="result" class="result"></div>
+</section>
+</div>
+
+<section class="card" style="margin-top:18px">
+<h2>All products</h2>
+<div class="filters">
+<input id="search" placeholder="Search name, SKU, collection or barcode">
+<select id="collection"><option value="">All collections</option></select>
+</div>
+<div class="table-wrap">
+<table><thead><tr><th>Collection</th><th>SKU</th><th>Product</th><th>20-digit code</th></tr></thead>
+<tbody id="tbody"></tbody></table>
+</div>
+</section>
+</div>
+
+<script>
+const PRODUCTS = [{"collection":"HOME","sku":"HW01","name":"Small textured stoneware vase","barcode":"17066768885661102804"},{"collection":"HOME","sku":"HW02","name":"Medium textured stoneware vase","barcode":"74453518170711275600"},{"collection":"HOME","sku":"HW03","name":"Large statement vase","barcode":"96530102959590814352"},{"collection":"HOME","sku":"HW04","name":"Bud vase pair","barcode":"61824415318272895702"},{"collection":"HOME","sku":"HW05","name":"Decorative ceramic bowl","barcode":"49908306917870797893"},{"collection":"HOME","sku":"HW06","name":"Large serving/decorative bowl","barcode":"04515760443266958377"},{"collection":"HOME","sku":"HW07","name":"Woven storage basket — small","barcode":"94352540731219710809"},{"collection":"HOME","sku":"HW08","name":"Woven storage basket — medium","barcode":"78207294152331819272"},{"collection":"HOME","sku":"HW09","name":"Woven storage basket — large","barcode":"74930579491209858639"},{"collection":"HOME","sku":"HW10","name":"Neutral linen cushion","barcode":"09246740687725251021"},{"collection":"HOME","sku":"HW11","name":"Textured throw","barcode":"83712098806171351932"},{"collection":"HOME","sku":"HW12","name":"Small brass-effect lantern","barcode":"34502975939380442910"},{"collection":"HOME","sku":"HW13","name":"Large lantern","barcode":"88643538850677740218"},{"collection":"HOME","sku":"HW14","name":"Decorative ceramic house","barcode":"33936642747864772586"},{"collection":"HOME","sku":"HW15","name":"Oak-look photo frame","barcode":"64671552751827260866"},{"collection":"GARDEN","sku":"GD01","name":"Stone-look planter — small","barcode":"63887795604701035250"},{"collection":"GARDEN","sku":"GD02","name":"Stone-look planter — medium","barcode":"26519206436827022885"},{"collection":"GARDEN","sku":"GD03","name":"Large statement planter","barcode":"91290979282837138344"},{"collection":"GARDEN","sku":"GD04","name":"Ribbed ceramic plant pot","barcode":"85303005932185715203"},{"collection":"GARDEN","sku":"GD05","name":"Brass plant-marker set","barcode":"68366784074378682336"},{"collection":"GARDEN","sku":"GD06","name":"Garden glove pair","barcode":"95583219893376808518"},{"collection":"GARDEN","sku":"GD07","name":"Woven garden trug","barcode":"52886639808081144323"},{"collection":"GARDEN","sku":"GD08","name":"Bird feeder","barcode":"72241362307682736288"},{"collection":"GARDEN","sku":"GD09","name":"Bird-feeding scoop/container","barcode":"77200283042880199744"},{"collection":"GARDEN","sku":"GD10","name":"Garden ornament","barcode":"99497826160479173482"},{"collection":"GARDEN","sku":"GD11","name":"Outdoor lantern","barcode":"48437687750086015113"},{"collection":"GARDEN","sku":"GD12","name":"Metal-look watering can","barcode":"55107487951634456166"},{"collection":"GARDEN","sku":"GD13","name":"Garden kneeling pad","barcode":"47015031795869762339"},{"collection":"GARDEN","sku":"GD14","name":"Garden apron","barcode":"72700160896541813821"},{"collection":"TABLE","sku":"TB01","name":"Linen tea towel","barcode":"95801197391142033652"},{"collection":"TABLE","sku":"TB02","name":"Linen napkin pair","barcode":"28374675464174015783"},{"collection":"TABLE","sku":"TB03","name":"Linen napkin set of four","barcode":"84231299894033719041"},{"collection":"TABLE","sku":"TB04","name":"Wood serving board","barcode":"70817321140599332655"},{"collection":"TABLE","sku":"TB05","name":"Large serving board","barcode":"47198716334604592004"},{"collection":"TABLE","sku":"TB06","name":"Ceramic serving dish","barcode":"21600940434505080752"},{"collection":"TABLE","sku":"TB07","name":"Small glass tumbler","barcode":"52263125814348524690"},{"collection":"TABLE","sku":"TB08","name":"Set of four tumblers","barcode":"89437238044275453482"},{"collection":"TABLE","sku":"TB09","name":"Napkin ring pair","barcode":"74793850356381782891"},{"collection":"TABLE","sku":"TB10","name":"Serving utensil set","barcode":"40070113672860814634"},{"collection":"SCENT","sku":"SC01","name":"Small signature candle","barcode":"49716007551434571200"},{"collection":"SCENT","sku":"SC02","name":"Large signature candle","barcode":"81329243538090277413"},{"collection":"SCENT","sku":"SC03","name":"Reed diffuser","barcode":"37001514325561234349"},{"collection":"SCENT","sku":"SC04","name":"Wax melt box","barcode":"57139671884474828891"},{"collection":"SCENT","sku":"SC05","name":"Luxury matches","barcode":"19902927741872943770"},{"collection":"SCENT","sku":"SC06","name":"Candle + matches duo","barcode":"24615688208027819019"},{"collection":"GIFTS","sku":"GF01","name":"Little Wrenwood gift box","barcode":"33234334364214820372"},{"collection":"GIFTS","sku":"GF02","name":"Garden gift box","barcode":"49031253750497404686"},{"collection":"GIFTS","sku":"GF03","name":"Host gift box","barcode":"37207398238413031703"},{"collection":"GIFTS","sku":"GF04","name":"Housewarming gift box","barcode":"63624867795676150814"},{"collection":"GIFTS","sku":"GF05","name":"Luxury Wrenwood gift box","barcode":"42602769443798261559"},{"collection":"SEASONAL","sku":"SE01","name":"Seasonal table decoration","barcode":"91631579673325586266"},{"collection":"SEASONAL","sku":"SE02","name":"Seasonal candle","barcode":"95303830903770737947"},{"collection":"SEASONAL","sku":"SE03","name":"Premium seasonal ornament","barcode":"33596549272203326622"},{"collection":"SEASONAL","sku":"SE04","name":"Seasonal wreath accessory","barcode":"33790947608528257231"}];
+let scanner = null;
+let running = false;
+
+const $ = id => document.getElementById(id);
+const normalise = s => String(s ?? '').replace(/\D/g,'');
+function showProduct(p, message='') {
+  const el=$('result');
+  if(!p) {
+    el.innerHTML='<strong>No product found.</strong><br>That barcode is not in the Wrenwood Living catalogue.';
+  } else {
+    el.innerHTML=`<span class="badge">${p.collection}</span>
+      <h3 style="margin:10px 0 4px">${p.name}</h3>
+      <div class="sku">${p.sku}</div>
+      <div class="code">${p.barcode}</div>
+      ${message ? '<p style="margin:8px 0 0">'+message+'</p>' : ''}`;
+  }
+  el.classList.add('show');
+}
+function lookup(raw) {
+  const code=normalise(raw);
+  $('manual').value=code;
+  showProduct(PRODUCTS.find(p=>p.barcode===code), code.length===20 ? '' : 'A Wrenwood barcode contains 20 digits.');
+}
+$('lookupBtn').onclick=()=>lookup($('manual').value);
+$('clearBtn').onclick=()=>{ $('manual').value=''; $('result').classList.remove('show'); };
+$('manual').addEventListener('keydown',e=>{if(e.key==='Enter') lookup(e.target.value)});
+
+const collections=[...new Set(PRODUCTS.map(p=>p.collection))];
+collections.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;$('collection').appendChild(o)});
+
+function renderTable() {
+  const q=$('search').value.toLowerCase().trim(), c=$('collection').value;
+  $('tbody').innerHTML=PRODUCTS.filter(p=>
+    (!c||p.collection===c) &&
+    (!q||[p.collection,p.sku,p.name,p.barcode].join(' ').toLowerCase().includes(q))
+  ).map(p=>`<tr><td>${p.collection}</td><td><b>${p.sku}</b></td><td>${p.name}</td><td class="code">${p.barcode}</td></tr>`).join('');
+}
+$('search').oninput=renderTable; $('collection').onchange=renderTable; renderTable();
+
+$('startBtn').onclick=async()=>{
+  if(running) return;
+  if(typeof Html5Qrcode==='undefined') { alert('Scanner library is still loading. Try again in a moment.'); return; }
+  scanner=new Html5Qrcode("reader");
+  try {
+    await scanner.start(
+      {facingMode:"environment"},
+      {fps:10,qrbox:{width:280,height:180},formatsToSupport:[
+        Html5QrcodeSupportedFormats.CODE_128,
+        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.UPC_A,
+        Html5QrcodeSupportedFormats.UPC_E
+      ]},
+      text=>{ lookup(text); },
+      ()=>{}
+    );
+    running=true; $('startBtn').disabled=true; $('stopBtn').disabled=false;
+  } catch(e) {
+    alert('Could not start the camera scanner. Check camera permission and try again.');
+    scanner=null;
+  }
+};
+$('stopBtn').onclick=async()=>{
+  if(scanner && running) { await scanner.stop(); scanner.clear(); }
+  running=false; $('startBtn').disabled=false; $('stopBtn').disabled=true;
+};
+</script>
+</body>
+</html>
